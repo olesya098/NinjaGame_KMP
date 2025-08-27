@@ -32,9 +32,18 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+
+            implementation(libs.exo.player)
+            implementation(libs.koin.android)
         }
         commonMain.dependencies {
+
             implementation(libs.sprite.kmp)
+
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
+
+
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)

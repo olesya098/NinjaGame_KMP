@@ -10,9 +10,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -30,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -58,9 +62,13 @@ import org.example.ninjagame.domain.GameSettings
 import org.example.ninjagame.domain.GameStatus
 import org.example.ninjagame.domain.MoveDirection
 import org.example.ninjagame.domain.Weapon
+import org.example.ninjagame.domain.audio.AudioPlayer
+import org.example.ninjagame.domain.levels
 import org.example.ninjagame.util.detectMoveGesture
 import org.jetbrains.compose.resources.imageResource
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.koinInject
+import kotlin.math.sqrt
 
 const val NINJA_FRAME_WIDTH = 253// ширина кадра спрайта
 const val NINJA_FRAME_HEIGHT = 303
@@ -72,12 +80,28 @@ const val TARGET_SIZE = 40f//начальный размер цели
 @Composable
 fun MainScreen() {
     val scope = rememberCoroutineScope()
+    val audio = koinInject<AudioPlayer>()
     val targets = remember { mutableStateListOf<Target>() }//статус запущенности игры
     val weapons = remember { mutableStateListOf<Weapon>() }//переменная для слежения бросаемых мечей
     var game by remember { mutableStateOf(Game()) }//игровой объект для передачи текущего состояния игры
     var moveDirection by remember { mutableStateOf(MoveDirection.None) }//свойство перемещения
     var screenWidth by remember { mutableStateOf(0) }
     var screenHeight by remember { mutableStateOf(0) }
+
+    LaunchedEffect(game.score) {//левлы
+        levels
+            .filter { it.first.score == game.score }
+            .takeIf { it.isNotEmpty() }
+            ?.forEach { (_, nextLevel) ->
+                game = game.copy(
+                    settings = GameSettings(
+                        ninjaSpeed = game.settings.ninjaSpeed + nextLevel.ninjaSpeed,
+                        weaponSpeed = game.settings.weaponSpeed + nextLevel.weaponSpeed,
+                        targetSpeed = game.settings.targetSpeed + nextLevel.targetSpeed,
+                    )
+                )
+            }
+    }
 
     val runningSprite = rememberSpriteState(//используется для анимации бегущего нинзя
         totalFrames = 9,
@@ -167,6 +191,81 @@ fun MainScreen() {
                         fallingSpeed = game.settings.targetSpeed
                     )
                 )
+            }
+        }
+    }
+    //срабатывает при изменении статуса игры
+    LaunchedEffect(game.status) {
+        while (game.status == GameStatus.Started) {
+            withFrameMillis {//объединение логики(к примеру что б предметы летели на встречу друг другу)
+                targets.forEach { target ->
+                    scope.launch(Dispatchers.Main) {
+                        target.y.animateTo(
+                            targetValue = target.y.value + target.fallingSpeed
+                        )
+                    }
+                }
+                weapons.forEach { weapon ->//логика обнаружения столкновений
+                    weapon.y += weapon.shootingSpeed
+                }
+                //итераторы для списка целей и оружия
+                val weaponIterator = weapons.iterator()
+                while (weaponIterator.hasNext()) {
+                    val weapon = weaponIterator.next()
+                    val targetIterator = targets.listIterator()
+                    while (targetIterator.hasNext()) {
+                        val target = targetIterator.next()
+                        if (isCollision(weapon, target)) {
+                           audio.playSound(index = 0)
+                            if (target is StrongTarget) {
+                                if (target.lives > 0) {
+                                    targetIterator.set(
+                                        element = target.copy(
+                                            radius = target.radius + 10,
+                                            lives = target.lives - 1
+                                        )
+                                    )
+                                    weaponIterator.remove()
+                                } else {
+                                    weaponIterator.remove()
+                                    targetIterator.remove()
+                                    game = game.copy(score = game.score + 5)
+                                }
+                            } else if (target is MediumTarget) {
+                                if (target.lives > 0) {
+                                    targetIterator.set(
+                                        element = target.copy(
+                                            radius = target.radius + 10,
+                                            lives = target.lives - 1
+                                        )
+                                    )
+                                    weaponIterator.remove()
+                                } else {
+                                    weaponIterator.remove()
+                                    targetIterator.remove()
+                                    game = game.copy(score = game.score + 5)
+                                }
+                            } else if (target is EasyTarget) {
+                                weaponIterator.remove()
+                                targetIterator.remove()
+                                game = game.copy(score = game.score + 5)
+                            }
+                            break
+                        }
+                    }
+                }
+                //окончание игры и проверка целей
+                val offScreenTarget = targets.firstOrNull {
+                    it.y.value > screenHeight//если цель упала ниже нинзя
+                }
+                if (offScreenTarget != null) {
+                    game = game.copy(
+                        status = GameStatus.Over
+                    )
+                    runningSprite.stop()//анимация останавливается
+                    weapons.removeAll { true }//убираем цели и ножи с экрана
+                    targets.removeAll { true }
+                }
             }
         }
     }
@@ -260,6 +359,26 @@ fun MainScreen() {
 
         }
     }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = 34.dp,
+                vertical = 34.dp
+            ),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = "Level: ${levels.firstOrNull { it.first.score >= game.score }?.first?.name ?: "MAX"}",
+            fontSize = MaterialTheme.typography.titleLarge.fontSize,
+        )
+        Text(
+            text = "Score: ${game.score}",
+            fontSize = MaterialTheme.typography.titleLarge.fontSize,
+        )
+    }
+
     if (game.status == GameStatus.Idle) {
         Column(
             modifier = Modifier
@@ -322,4 +441,10 @@ fun MainScreen() {
         }
     }
 }
-
+//возвращает логическое значения когда 2 объекта поражают друг друга
+fun isCollision(weapon: Weapon, target: Target): Boolean {
+    val dx = weapon.x - target.x
+    val dy = weapon.y - target.y.value
+    val distance = sqrt(dx * dx + dy * dy)
+    return distance < (weapon.radius + target.radius)
+}

@@ -5,10 +5,23 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import org.example.ninjagame.domain.target.EasyTarget
+import org.example.ninjagame.domain.target.MediumTarget
+import org.example.ninjagame.domain.target.StrongTarget
+import org.example.ninjagame.domain.target.Target
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -17,11 +30,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import com.stevdza_san.sprite.component.drawSpriteView
 import com.stevdza_san.sprite.domain.SpriteFlip
 import com.stevdza_san.sprite.domain.SpriteSheet
@@ -36,6 +54,7 @@ import ninjagame.composeapp.generated.resources.kunai
 import ninjagame.composeapp.generated.resources.run_sprite
 import ninjagame.composeapp.generated.resources.standing_ninja
 import org.example.ninjagame.domain.Game
+import org.example.ninjagame.domain.GameSettings
 import org.example.ninjagame.domain.GameStatus
 import org.example.ninjagame.domain.MoveDirection
 import org.example.ninjagame.domain.Weapon
@@ -47,12 +66,13 @@ const val NINJA_FRAME_WIDTH = 253// ширина кадра спрайта
 const val NINJA_FRAME_HEIGHT = 303
 const val WEAPON_SPAWN_RATE = 150L
 const val WEAPON_SIZE = 32f
-const val TARGET_SPAWN_RATE = 1500L
-const val TARGET_SIZE = 40f
+const val TARGET_SPAWN_RATE = 1500L//скорость появления цели
+const val TARGET_SIZE = 40f//начальный размер цели
 
 @Composable
 fun MainScreen() {
     val scope = rememberCoroutineScope()
+    val targets = remember { mutableStateListOf<Target>() }//статус запущенности игры
     val weapons = remember { mutableStateListOf<Weapon>() }//переменная для слежения бросаемых мечей
     var game by remember { mutableStateOf(Game()) }//игровой объект для передачи текущего состояния игры
     var moveDirection by remember { mutableStateOf(MoveDirection.None) }//свойство перемещения
@@ -114,7 +134,42 @@ fun MainScreen() {
             )
         }
     }
-
+    //блок создания целей появляются с интервалом пока игра не закончится
+    LaunchedEffect(game.status) {
+        while (game.status == GameStatus.Started) {
+            delay(TARGET_SPAWN_RATE)
+            val randomX = (0..screenWidth).random()//случайная позиция появления цели
+            val isEven = (randomX % 2 == 0)
+            if (isEven) {//для создания различных целей на различных позициях
+                targets.add(
+                    MediumTarget(
+                        x = randomX.toFloat(),
+                        y = Animatable(0f),
+                        radius = TARGET_SIZE,
+                        fallingSpeed = game.settings.targetSpeed
+                    )
+                )
+            } else if (randomX > screenWidth * 0.75) {
+                targets.add(
+                    StrongTarget(
+                        x = randomX.toFloat(),
+                        y = Animatable(0f),
+                        radius = TARGET_SIZE,
+                        fallingSpeed = game.settings.targetSpeed * 0.25f
+                    )
+                )
+            } else {
+                targets.add(
+                    EasyTarget(
+                        x = randomX.toFloat(),
+                        y = Animatable(0f),
+                        radius = TARGET_SIZE,
+                        fallingSpeed = game.settings.targetSpeed
+                    )
+                )
+            }
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -170,13 +225,33 @@ fun MainScreen() {
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-        ) {//для рисовки нинзя
+        ) {
+            targets.forEach { target ->
+                drawCircle(
+                    color = target.color,
+                    radius = target.radius,
+                    center = Offset(
+                        x = target.x,
+                        y = target.y.value
+                    )
+                )
+            }
+            weapons.forEach { weapon ->//рисовка оружия на холсте
+                drawImage(
+                    image = kunaiImage,
+                    dstOffset = IntOffset(
+                        x = weapon.x.toInt(),
+                        y = weapon.y.toInt()
+                    )
+                )
+            }
+            //для рисовки нинзя
             drawSpriteView(
                 spriteState = if (isRunning) runningSprite else standingSprite,
                 spriteSpec = if (isRunning) runningSpriteSpec else standingSpriteSpec,
                 currentFrame = if (isRunning) currentRunningFrame else currentStandingFrame,
                 image = if (isRunning) runningImage else standingImage,
-                spriteFlip = if (moveDirection == MoveDirection.Left) SpriteFlip.Horizontal else null ,//переворот и направление спрайта влево
+                spriteFlip = if (moveDirection == MoveDirection.Left) SpriteFlip.Horizontal else null,//переворот и направление спрайта влево
                 offset = IntOffset(//параметр смещения для правильного расчета движений
                     x = ninjaOffsetX.value.toInt(),
                     y = (screenHeight - NINJA_FRAME_HEIGHT - (NINJA_FRAME_HEIGHT / 2))//нинзя в нижней части экрана
@@ -185,5 +260,66 @@ fun MainScreen() {
 
         }
     }
+    if (game.status == GameStatus.Idle) {
+        Column(
+            modifier = Modifier
+                .clickable(enabled = false) { }
+                .background(Color.Black.copy(alpha = 0.7f))
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Ready?",
+                fontSize = MaterialTheme.typography.displayMedium.fontSize,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = {
+                    game = game.copy(status = GameStatus.Started)
+                }
+            ) {
+                Text(text = "Start")
+            }
+        }
+    }
 
+    if (game.status == GameStatus.Over) {
+        Column(
+            modifier = Modifier
+                .clickable(enabled = false) { }
+                .background(Color.Black.copy(alpha = 0.7f))
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Game Over!",
+                fontSize = MaterialTheme.typography.displayLarge.fontSize,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                text = "Your Score: ${game.score}",
+                fontSize = MaterialTheme.typography.titleLarge.fontSize,
+                fontWeight = FontWeight.Medium,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = {
+                    game = game.copy(
+                        score = 0,
+                        status = GameStatus.Started,
+                        settings = GameSettings()
+                    )
+                }
+            ) {
+                Text(text = "Play again")
+            }
+        }
+    }
 }
+

@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -27,6 +28,7 @@ import com.stevdza_san.sprite.domain.SpriteSheet
 import com.stevdza_san.sprite.domain.SpriteSpec
 import com.stevdza_san.sprite.domain.rememberSpriteState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ninjagame.composeapp.generated.resources.Res
 import ninjagame.composeapp.generated.resources.background
@@ -36,6 +38,7 @@ import ninjagame.composeapp.generated.resources.standing_ninja
 import org.example.ninjagame.domain.Game
 import org.example.ninjagame.domain.GameStatus
 import org.example.ninjagame.domain.MoveDirection
+import org.example.ninjagame.domain.Weapon
 import org.example.ninjagame.util.detectMoveGesture
 import org.jetbrains.compose.resources.imageResource
 import org.jetbrains.compose.resources.painterResource
@@ -50,6 +53,7 @@ const val TARGET_SIZE = 40f
 @Composable
 fun MainScreen() {
     val scope = rememberCoroutineScope()
+    val weapons = remember { mutableStateListOf<Weapon>() }//переменная для слежения бросаемых мечей
     var game by remember { mutableStateOf(Game()) }//игровой объект для передачи текущего состояния игры
     var moveDirection by remember { mutableStateOf(MoveDirection.None) }//свойство перемещения
     var screenWidth by remember { mutableStateOf(0) }
@@ -96,8 +100,19 @@ fun MainScreen() {
             initialValue = ((screenWidth.toFloat()) / 2 - (NINJA_FRAME_WIDTH / 2))
         )
     }
-    LaunchedEffect(Unit) {
-        game = game.copy(status = GameStatus.Started)
+
+    LaunchedEffect(isRunning, game.status) {//лаунч для оружия
+        while (isRunning && game.status == GameStatus.Started) {
+            delay(WEAPON_SPAWN_RATE)//скорость появления оружия
+            weapons.add(//добавляем новое оружие в лист
+                Weapon(
+                    x = ninjaOffsetX.value + (NINJA_FRAME_WIDTH / 2),//стартовая позиция оружия
+                    y = screenHeight - NINJA_FRAME_HEIGHT.toFloat() * 2,
+                    radius = WEAPON_SIZE,
+                    shootingSpeed = -game.settings.weaponSpeed//минус потому что оружие перемещается в отрицательном направлении
+                )
+            )
+        }
     }
 
     Box(

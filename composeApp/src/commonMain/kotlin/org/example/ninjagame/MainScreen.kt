@@ -7,11 +7,14 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -24,12 +27,14 @@ import com.stevdza_san.sprite.domain.SpriteSheet
 import com.stevdza_san.sprite.domain.SpriteSpec
 import com.stevdza_san.sprite.domain.rememberSpriteState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import ninjagame.composeapp.generated.resources.Res
 import ninjagame.composeapp.generated.resources.background
 import ninjagame.composeapp.generated.resources.kunai
 import ninjagame.composeapp.generated.resources.run_sprite
 import ninjagame.composeapp.generated.resources.standing_ninja
 import org.example.ninjagame.domain.Game
+import org.example.ninjagame.domain.GameStatus
 import org.example.ninjagame.domain.MoveDirection
 import org.example.ninjagame.util.detectMoveGesture
 import org.jetbrains.compose.resources.imageResource
@@ -44,7 +49,8 @@ const val TARGET_SIZE = 40f
 
 @Composable
 fun MainScreen() {
-    val game = remember { Game() }//игровой объект для передачи текущего состояния игры
+    val scope = rememberCoroutineScope()
+    var game by remember { mutableStateOf(Game()) }//игровой объект для передачи текущего состояния игры
     var moveDirection by remember { mutableStateOf(MoveDirection.None) }//свойство перемещения
     var screenWidth by remember { mutableStateOf(0) }
     var screenHeight by remember { mutableStateOf(0) }
@@ -90,6 +96,9 @@ fun MainScreen() {
             initialValue = ((screenWidth.toFloat()) / 2 - (NINJA_FRAME_WIDTH / 2))
         )
     }
+    LaunchedEffect(Unit) {
+        game = game.copy(status = GameStatus.Started)
+    }
 
     Box(
         modifier = Modifier
@@ -102,15 +111,36 @@ fun MainScreen() {
                 awaitPointerEventScope {
                     detectMoveGesture(
                         gameStatus = game.status,
-                        onLeft = {
-
+                        onLeft = {//анимируем таблицу спрайтов
+                            moveDirection = MoveDirection.Left
+                            runningSprite.start()
+                            scope.launch(Dispatchers.Main) {
+                                while (isRunning) {//когда анимация остановлена(палец поднят) нинзя стоит
+                                    ninjaOffsetX.animateTo(//когда нинзя бежит обновляем анимацию
+                                        targetValue = if ((ninjaOffsetX.value - game.settings.ninjaSpeed) >= 0 - (NINJA_FRAME_WIDTH / 2))
+                                            ninjaOffsetX.value - game.settings.ninjaSpeed else ninjaOffsetX.value,//минусы для того что б не убегал за край экрана
+                                        animationSpec = tween(30)
+                                    )
+                                }
+                            }
                         },
                         onRight = {
-
+                            moveDirection = MoveDirection.Right
+                            runningSprite.start()
+                            scope.launch(Dispatchers.Main) {
+                                while (isRunning) {
+                                    ninjaOffsetX.animateTo(
+                                        targetValue = if ((ninjaOffsetX.value + game.settings.ninjaSpeed + NINJA_FRAME_WIDTH) <= screenWidth + (NINJA_FRAME_WIDTH / 2))
+                                            ninjaOffsetX.value + game.settings.ninjaSpeed else ninjaOffsetX.value,
+                                        animationSpec = tween(30)
+                                    )
+                                }
+                            }
                         },
                         onFingerLifted = {
                             moveDirection = MoveDirection.None
                             runningSprite.stop()
+
                         }
                     )
                 }

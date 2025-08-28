@@ -50,5 +50,8 @@ QR Код для скачивания
 
 <img width="145" height="145" alt="qr (7)" src="https://github.com/user-attachments/assets/ea24b8db-f4cf-4f2c-883d-2eea3e15ed64" />
 
+## О KMP
+KMP (Kotlin Multiplatform) — это технология от JetBrains, которая позволяет писать код на Kotlin и компилировать его для разных платформ.
+Это первая моя работа на данной технологии.
 
 

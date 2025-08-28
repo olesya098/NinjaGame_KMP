@@ -8,5 +8,5 @@ data class EasyTarget(
     override val y: Animatable<Float, *> = Animatable(0f),
     override val radius: Float = 0f,
     override val fallingSpeed: Float = 0f,
-    override val color: Color = Color(0xFFFFFFFF)
+    override val color: Color = Color(0xFF71c9ce)
 ): Target

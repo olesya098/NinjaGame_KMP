@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -396,6 +397,9 @@ fun MainScreen() {
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(
+                colors = ButtonDefaults.buttonColors(
+                    Color(0xFFc9a0dc)
+                ),
                 onClick = {
                     game = game.copy(status = GameStatus.Started)
                 }
@@ -428,6 +432,9 @@ fun MainScreen() {
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(
+                colors = ButtonDefaults.buttonColors(
+                    Color(0xFFc9a0dc)
+                ),
                 onClick = {
                     game = game.copy(
                         score = 0,

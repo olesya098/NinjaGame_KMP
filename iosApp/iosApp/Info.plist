@@ -4,5 +4,6 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<string>Blade Runner</string>
 </dict>
 </plist>

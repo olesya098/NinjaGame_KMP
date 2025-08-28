@@ -1,16 +1,54 @@
-This is a Kotlin Multiplatform project targeting Android, iOS.
+## Blade Runner (версия: 0.0.1) – Мобильное приложение-игра 📱
+*(Сделано в рамках изучения KMP(по курсу). Планируются так же следующие версии продукта)*
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-    folder is the appropriate location.
+## 📌 О проекте
+Blade Runner – это мобильное приложение-игра с красивым UI и простым интерфейсом.
 
-* [/iosApp](./iosApp/iosApp) contains iOS applications. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+### ℹ️ Основные функции:
+- Передвижение главного героя
+- уничтожение целей
+- подсчет баллов
+- переход на различные уровни
+
+## 🛠 Технологии
+- Язык программирования: Kotlin ![icons8-kotlin-24](https://github.com/user-attachments/assets/dd22db24-423b-4bcd-ac42-55ab4442bf34)
+- Среда разработки: Android Studio ![icons8-android-48](https://github.com/user-attachments/assets/3ed31c38-27b7-4a0f-a5a9-d355f250014a)
+- Архитектура: KMP (Kotlin Multiplatform) ![icons8-архитектура-продукта-32](https://github.com/user-attachments/assets/a199d00b-f379-4408-8f30-b051c20f44fa)
+
+## 📥 📲 Установка
+Для установки требуется:
+- Android или iOS
+
+## 📄 Руководство по использованию
+1. Начало работы
+- Пользователю сразу открывается игра.
+- При нажатии на кнопку Start игра запускается
+
+2. Процесс игры
+- Пользователь должен передвигать героя нажатием на экран и попадать по мешеням
+- при попадании в мешень баллы увеличиваются и уровень тоде ростёт
+- Если пользователь пропускает мешень, то пользователю дается возможность начать игру заново
+
+## 👩‍💻 Разработчик(информация взята из видео урока)
+Лекарева Олеся Сергеевна
+Студентка, специальность "Информационные системы и программирование"
+ГАПОУ ПО ПКИПТ (ИТ-колледж)
+
+## Скрины приложения
+
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/a0bcd906-e7df-4138-baa1-1dd45ee05ee3" width="150" alt="Скриншот 1"> 
+  <img src="https://github.com/user-attachments/assets/ee472c96-35ad-4a63-a4a8-d3e4b804db15" width="150" alt="Скриншот 2">
+  <img src="https://github.com/user-attachments/assets/09261597-7d17-49b0-86f8-12dbd6137335" width="150" alt="Скриншот 3">
+</div>
 
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+## Скачить приложение
+> Приложение доступно по QR коду.
+
+QR Код для скачивания
+
+<img width="145" height="145" alt="qr (7)" src="https://github.com/user-attachments/assets/ea24b8db-f4cf-4f2c-883d-2eea3e15ed64" />
+
+
+

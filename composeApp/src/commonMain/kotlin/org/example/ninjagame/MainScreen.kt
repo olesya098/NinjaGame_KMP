@@ -54,6 +54,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ninjagame.composeapp.generated.resources.Res
+import ninjagame.composeapp.generated.resources.back3
+import ninjagame.composeapp.generated.resources.shuriken
+import ninjagame.composeapp.generated.resources.shuriken50
+import ninjagame.composeapp.generated.resources.shuriken80
 import ninjagame.composeapp.generated.resources.background
 import ninjagame.composeapp.generated.resources.kunai
 import ninjagame.composeapp.generated.resources.run_sprite
@@ -138,7 +142,7 @@ fun MainScreen() {
     }
     val runningImage = runningSpriteSpec.imageBitmap
     val standingImage = standingSpriteSpec.imageBitmap
-    val kunaiImage = imageResource(Res.drawable.kunai)
+    val kunaiImage = imageResource(Res.drawable.shuriken80)
 
     val ninjaOffsetX = remember(key1 = screenWidth) {
         Animatable(//переменная смещения по умолчанию на нижнем центре
@@ -318,7 +322,7 @@ fun MainScreen() {
     ) {
         Image(
             modifier = Modifier.fillMaxSize(),
-            painter = painterResource(Res.drawable.background),
+            painter = painterResource(Res.drawable.back3),
             contentDescription = null,
             contentScale = ContentScale.FillBounds
         )
